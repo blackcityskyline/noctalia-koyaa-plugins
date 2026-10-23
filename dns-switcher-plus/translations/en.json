@@ -31,5 +31,12 @@
       "label": "Show Label",
       "description": "Display active DNS name on the bar widget."
     }
+  },
+  "launcher": {
+    "open": "Open DNS Switcher",
+    "description": "Switch DNS providers or DNSCrypt mode.",
+    "auto": "Auto (DHCP)",
+    "current": "current",
+    "applying": "Applying…"
   }
 }

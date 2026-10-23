@@ -82,5 +82,12 @@
     "night": "night",
     "inside-work-hours": "Within working hours",
     "outside-work-hours": "Outside working hours"
+  },
+  "launcher": {
+    "open": "Open Timezone Hub",
+    "description": "World clock and timezone panel.",
+    "add": "Add to hub",
+    "added": "Added",
+    "loading": "Loading…"
   }
 }

@@ -6,7 +6,7 @@ author      = "ahmedhossamdev (forked by blackbartblues)"
 license     = "MIT"
 icon        = "world"
 description = "Change your device timezone and compare it against other cities, with live times and an hour-offset strip for each."
-tags        = ["bar", "clock", "time", "utility"]
+tags        = ["bar", "clock", "time", "utility", "launcher"]
 dependencies = ["timedatectl", "pkexec"]
 
 [[widget]]
@@ -25,6 +25,13 @@ open_near_click = true
 [[service]]
 id    = "service"
 entry = "service.luau"
+
+[[launcher_provider]]
+id    = "launcher"
+entry = "launcher.luau"
+prefix = "tz"
+glyph = "world"
+include_in_global_search = true
 
 [[setting]]
 key         = "time_format"

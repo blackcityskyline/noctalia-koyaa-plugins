@@ -110,5 +110,12 @@
       "grid": "Grid",
       "list": "List"
     }
+  },
+  "launcher": {
+    "open": "Open Script Box",
+    "description": "A grid of user-defined script buttons.",
+    "run_hint": "Run",
+    "empty": "No scripts yet",
+    "no_matches": "No matching scripts"
   }
 }

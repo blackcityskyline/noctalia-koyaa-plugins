@@ -6,7 +6,7 @@
 #
 # Usage: webapp-install.sh --launcher <path> --backend <binary> [--flags "<flags>"] <name> <url> [icon-url-or-file]
 #
-# --backend specifies which browser binary to use (e.g. "zen", "firefox", "brave").
+# --backend specifies which browser binary to use (e.g. "chromium", "brave").
 # Non-interactive by design. Exit non-zero with a message on error.
 
 set -e

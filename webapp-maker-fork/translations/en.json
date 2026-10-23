@@ -1,7 +1,7 @@
 {
   "btn_create": "Create",
   "err_failed": "webapp-install failed, see the Noctalia log",
-  "err_no_browser": "Set browser_backend in plugin settings first",
+  "err_no_browser": "Set browser_backend in plugin settings first (Chromium-family only)",
   "err_remove_failed": "Removal failed, see the Noctalia log",
   "err_required": "Name and URL are required",
   "err_slash": "Name cannot contain \"/\"",
@@ -21,7 +21,7 @@
   "settings": {
     "browser_backend": {
       "label": "Browser backend",
-      "description": "Binary name of the browser to use for web apps. Run: which zen-browser firefox chromium google-chrome brave. Chromium-family uses --app mode, Firefox-family uses --new-window."
+      "description": "Binary name of the browser to use for web apps (Chromium-family: chromium, google-chrome, brave, vivaldi, edge, helium). Uses --app mode."
     },
     "env_file": {
       "label": "Environment file",

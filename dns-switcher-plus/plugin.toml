@@ -6,7 +6,7 @@ author = "koyaa"
 license = "MIT"
 icon = "world"
 description = "Quickly switch DNS providers or DNSCrypt mode in NetworkManager"
-tags = ["bar", "panel", "service", "network"]
+tags = ["bar", "panel", "service", "network", "launcher"]
 
 [[setting]]
 key = "poll_seconds"
@@ -68,6 +68,13 @@ width = 430
 height = 460
 placement = "attached"
 open_near_click = true
+
+[[launcher_provider]]
+id = "launcher"
+entry = "launcher.luau"
+prefix = "dns"
+glyph = "world"
+include_in_global_search = true
 
 [[widget]]
 id = "dnscrypt-switcher"

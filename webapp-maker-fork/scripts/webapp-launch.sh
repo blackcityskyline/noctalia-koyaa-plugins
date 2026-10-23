@@ -9,8 +9,7 @@
 #   2. browser_backend from noctalia settings.toml
 #   3. Auto-detect from xdg-settings / known binaries
 #
-# Chromium-family: --app mode (no tabs, no URL bar)
-# Firefox-family:  --new-window (new window in existing instance)
+# Chromium-family only: --app mode (no tabs, no URL bar)
 
 # ── Parse args ───────────────────────────────────────────────────────────────
 backend=""
@@ -52,19 +51,9 @@ fi
 
 # ── Resolve browser ──────────────────────────────────────────────────────────
 exec_bin=""
-is_chromium=false
-is_firefox=false
 
 if [[ -n $backend ]]; then
   exec_bin=$(command -v "$backend" 2>/dev/null)
-  case ${backend,,} in
-  chromium | google-chrome* | brave | vivaldi | microsoft-edge* | opera | helium*)
-    is_chromium=true
-    ;;
-  firefox | zen* | waterfox | librewolf | palemoon)
-    is_firefox=true
-    ;;
-  esac
 fi
 
 # Auto-detect if no backend or binary not found
@@ -73,44 +62,23 @@ if [[ -z $exec_bin ]]; then
 
   case $browser in
   chromium* | chrome* | google-chrome* | brave* | microsoft-edge* | opera* | vivaldi* | helium*)
-    is_chromium=true
-    ;;
-  esac
-  case $browser in
-  firefox* | zen* | waterfox* | librewolf* | palemoon*)
-    is_firefox=true
-    ;;
-  esac
-  if [[ $is_chromium == false && $is_firefox == false && $browser == userapp-* ]]; then
-    case ${browser,,} in
-    *chromium* | *chrome* | *brave* | *edge* | *opera* | *vivaldi* | *helium*)
-      is_chromium=true
-      ;;
-    *firefox* | *zen* | *waterfox* | *librewolf* | *palemoon*)
-      is_firefox=true
-      ;;
-    esac
-  fi
-
-  if [[ $is_chromium == true || $is_firefox == true ]]; then
     exec_bin=$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' \
       "$HOME/.local/share/applications/$browser" "/usr/share/applications/$browser" 2>/dev/null | head -1)
-  fi
+    ;;
+  userapp-*)
+    case ${browser,,} in
+    *chromium* | *chrome* | *brave* | *edge* | *opera* | *vivaldi* | *helium*)
+      exec_bin=$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' \
+        "$HOME/.local/share/applications/$browser" "/usr/share/applications/$browser" 2>/dev/null | head -1)
+      ;;
+    esac
+    ;;
+  esac
 
   if [[ -z $exec_bin ]]; then
     for candidate in chromium google-chrome-stable google-chrome brave vivaldi microsoft-edge-stable helium; do
       if command -v "$candidate" >/dev/null; then
         exec_bin=$candidate
-        is_chromium=true
-        break
-      fi
-    done
-  fi
-  if [[ -z $exec_bin ]]; then
-    for candidate in zen-browser zen firefox waterfox librewolf palemoon; do
-      if command -v "$candidate" >/dev/null; then
-        exec_bin=$candidate
-        is_firefox=true
         break
       fi
     done
@@ -118,15 +86,9 @@ if [[ -z $exec_bin ]]; then
 fi
 
 if [[ -z $exec_bin ]]; then
-  command -v notify-send >/dev/null && notify-send "Web app" "No supported browser found"
+  command -v notify-send >/dev/null && notify-send "Web app" "No supported browser found (Chromium-family only)"
   exit 1
 fi
 
 # ── Launch ───────────────────────────────────────────────────────────────────
-if [[ $is_chromium == true ]]; then
-  exec setsid "$exec_bin" --app="$url" "$@"
-elif [[ $is_firefox == true ]]; then
-  exec setsid "$exec_bin" --new-window "$url" "$@"
-else
-  exec setsid "$exec_bin" --app="$url" "$@"
-fi
+exec setsid "$exec_bin" --app="$url" "$@"

@@ -21,6 +21,13 @@ capture_keys    = ["slash"]
 id              = "widget"
 entry           = "widget.luau"
 
+[[launcher_provider]]
+id              = "launcher"
+entry           = "launcher.luau"
+prefix          = "scr"
+glyph           = "terminal-2"
+include_in_global_search = true
+
 [[setting]]
 key             = "columns"
 type            = "int"
