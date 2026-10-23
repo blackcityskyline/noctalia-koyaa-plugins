@@ -55,7 +55,7 @@ id = "launcher"
 entry = "launcher.luau"
 prefix = "audio"
 glyph = "switch-horizontal"
-include_in_global_search = true
+include_in_global_search = false
 
 [[service]]
 id = "service"
