@@ -299,6 +299,18 @@ function onQuery(query)
   publish(lastQuery, snap, noctalia.string.trim(lastQuery))
 end
 
+-- Non-empty query anchors the provider so the window stays open across
+-- multi-step selections. Empty setQuery kills the provider context ( lessons
+-- learned earlier), so an untouched query falls back to the group filter,
+-- which doubles as the grouping screen.
+local function keepOpen(anchor)
+  local q = type(anchor) == "string" and anchor ~= "" and anchor or lastQuery
+  if type(q) ~= "string" or q == "" then
+    q = "group "
+  end
+  launcher.setQuery(q)
+end
+
 function onActivate(id)
   if type(id) ~= "string" or id == "" then
     return
@@ -323,18 +335,21 @@ function onActivate(id)
     if #ids >= 2 then
       sendCommand("create_output_group", { ids = ids })
       selectedIds = {}
+      keepOpen("")
     end
     return
   end
 
   if id == "clear-sel" then
     selectedIds = {}
+    keepOpen("")
     return
   end
 
   local selId = string.match(id, "^sel:(.+)$")
   if selId ~= nil then
     selectedIds[selId] = selectedIds[selId] == true and false or true
+    keepOpen("")
     return
   end
 
