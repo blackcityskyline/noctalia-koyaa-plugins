@@ -18,11 +18,13 @@
 local PANEL_ID = "koyaa-plugins/audio-switcher-plus:audio-switcher-plus"
 local SNAPSHOT_KEY = "audio_switcher_snapshot"
 local COMMAND_KEY = "audio_switcher_command"
+local RESULT_KEY = "audio_switcher_result"
 local RESULT_LIMIT = 40
 
 local requestCounter = 0
 local selectedIds = {}
 local lastQuery = ""
+local lastResult = nil
 
 local function tr(key, args)
   return noctalia.tr(key, args)
@@ -46,10 +48,13 @@ local function usableForGroup(d)
     and d.targetName ~= ""
 end
 
-local function subtitleFor(d, isCurrent, extra)
+local function subtitleFor(d, isCurrent, extra, tag)
   local text = tostring(d.description or d.name or d.id or "")
   if isCurrent then
     text ..= " · " .. tr("launcher.current")
+  end
+  if type(tag) == "string" and tag ~= "" then
+    text ..= " · " .. tag
   end
   if d.bluetooth == true and d.available == false then
     text ..= " · " .. tr("launcher.bt_disconnected")
@@ -95,6 +100,9 @@ local function publish(query, snap, trimmed)
   end
 
   -- Switch rows: outputs (incl. group sinks and unconnected BT) + inputs.
+  -- Glyph stays the device's own icon so a current input and a current output
+  -- remain visually distinct; "current" shows in the subtitle and every row is
+  -- direction-tagged (built-in input/output can share one description text).
   for _, d in ipairs(snap.outputs or {}) do
     if type(d) == "table" and d.hidden ~= true then
       local hay = tostring(d.name or "") .. " " .. tostring(d.description or "")
@@ -103,8 +111,8 @@ local function publish(query, snap, trimmed)
         table.insert(rows, deviceRow(
           switchIdFor(d),
           tostring(d.name or d.id),
-          subtitleFor(d, d.active == true, nil),
-          d.active == true and "check" or (tostring(d.icon or "volume")),
+          subtitleFor(d, d.active == true, nil, "output"),
+          tostring(d.icon or "volume"),
           score
         ))
       end
@@ -119,8 +127,8 @@ local function publish(query, snap, trimmed)
         table.insert(rows, deviceRow(
           "in:" .. tostring(d.id),
           tostring(d.name or d.id),
-          subtitleFor(d, d.active == true, nil),
-          d.active == true and "check" or "microphone",
+          subtitleFor(d, d.active == true, nil, "input"),
+          tostring(d.icon or "microphone"),
           score
         ))
       end
@@ -237,8 +245,30 @@ local function publish(query, snap, trimmed)
     table.insert(rows, 1, { id = "", title = tr("launcher.busy"), glyph = "loader" })
   end
 
+  -- Last service result as a feedback row (process start/finish is silent; only
+  -- the result tells whether create_output_group actually went through).
+  if lastResult ~= nil and noctalia.nowMs() - (lastResult.at or 0) < 8000 then
+    table.insert(rows, 1, {
+      id = "result-note",
+      title = lastResult.message,
+      glyph = lastResult.ok and "check" or "alert-triangle",
+      score = 6,
+    })
+  end
+
   launcher.setResults(query, rows)
 end
+
+-- Feedback channel: keep the last result for the feedback row above. The result
+-- table's message is already localized by the service.
+noctalia.state.watch(RESULT_KEY, function(result)
+  if type(result) == "table" and tostring(result.message or "") ~= "" then
+    lastResult = { message = tostring(result.message), ok = result.ok == true, at = noctalia.nowMs() }
+    if type(lastQuery) == "string" then
+      onQuery(lastQuery)
+    end
+  end
+end)
 
 -- Repaint when the service publishes a new snapshot (new group, connected BT);
 -- also fires while the window is closed, which is harmless.
@@ -276,6 +306,10 @@ function onActivate(id)
 
   if id == "open-panel" then
     noctalia.togglePanel(PANEL_ID)
+    return
+  end
+
+  if id == "result-note" then
     return
   end
 

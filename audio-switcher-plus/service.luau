@@ -901,6 +901,7 @@ end
 local function createOutputGroup(command)
   if actionBusy then
     resultMessage(command, false, noctalia.tr("errors.busy"))
+    notifyResult(false, noctalia.tr("errors.busy"))
     return
   end
   local selected = {}
@@ -914,6 +915,7 @@ local function createOutputGroup(command)
   end
   if #selected < 2 then
     resultMessage(command, false, noctalia.tr("errors.group_requires_two"))
+    notifyResult(false, noctalia.tr("errors.group_requires_two"))
     return
   end
 
@@ -953,11 +955,13 @@ end
 local function removeOutputGroup(command)
   if actionBusy then
     resultMessage(command, false, noctalia.tr("errors.busy"))
+    notifyResult(false, noctalia.tr("errors.busy"))
     return
   end
   local group = findOutputById(tostring(command.id or ""))
   if group == nil or not group.group or tonumber(group.groupModuleId) == nil then
     resultMessage(command, false, noctalia.tr("errors.group_not_found"))
+    notifyResult(false, noctalia.tr("errors.group_not_found"))
     return
   end
 
