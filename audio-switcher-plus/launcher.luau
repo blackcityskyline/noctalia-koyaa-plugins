@@ -1,12 +1,19 @@
 --!nonstrict
--- /audio: switch devices and manage output groups from the launcher.
--- Rows come from the service snapshot ("audio_switcher_snapshot") and share
--- the panel's command channel ("audio_switcher_command").
--- Normal mode: activate = set_output / set_input; unconnected Bluetooth
--- hardware is connected first; existing groups get a disband row.
--- Group mode (entered from the "New group" row): usable outputs toggle
--- selection, "Create group (N)" sends create_output_group with the ids.
--- Selection survives onQuery/onActivate and resets after grouping.
+-- /as: switch devices and manage output groups from the launcher — single
+-- screen, no stage machine. Rows come from the service snapshot
+-- ("audio_switcher_snapshot"); every action shares the panel's command
+-- channel ("audio_switcher_command").
+--   output/input rows          -> set_output / set_input (a group sink is a
+--                                 valid default target too)
+--   unconnected Bluetooth row  -> connect_bluetooth
+--   connected Bluetooth row    -> plus a separate reconnect row
+--   "Disband group" row        -> remove_output_group
+--   "Group + <name>" rows      -> toggle selection; it survives closing the
+--                                 launcher, so devices can be picked across
+--                                 re-opens; "Create group (N)" sends
+--                                 create_output_group once 2+ are picked.
+-- Hidden devices stay in the panel. The snapshot watch repaints rows created
+-- asynchronously (new group, connected BT) without retyping.
 
 local PANEL_ID = "koyaa-plugins/audio-switcher-plus:audio-switcher-plus"
 local SNAPSHOT_KEY = "audio_switcher_snapshot"
@@ -14,7 +21,6 @@ local COMMAND_KEY = "audio_switcher_command"
 local RESULT_LIMIT = 40
 
 local requestCounter = 0
-local groupMode = false
 local selectedIds = {}
 local lastQuery = ""
 
@@ -32,28 +38,6 @@ local function sendCommand(action, values)
   end
   noctalia.state.set(COMMAND_KEY, cmd)
 end
-
-local function clearSelection()
-  selectedIds = {}
-  groupMode = false
-end
-
--- keeps the launcher window open through a multi-stage flow; setQuery may be
--- missing in old plugin API builds — degrade to close-on-activate.
-local function keepOpen(queryText)
-  if type(launcher.setQuery) == "function" then
-    launcher.setQuery(queryText or "")
-  end
-end
-
--- Republish whenever the service publishes a new snapshot, so rows created
--- asynchronously (a freshly created group, a connected BT device) show up
--- without new keystrokes. Runs in the same runtime as the service entries.
-noctalia.state.watch(SNAPSHOT_KEY, function()
-  if type(lastQuery) == "string" then
-    onQuery(lastQuery)
-  end
-end)
 
 local function usableForGroup(d)
   return d.available == true
@@ -76,68 +60,87 @@ local function subtitleFor(d, isCurrent, extra)
   return text
 end
 
-local function deviceRow(d, score, idOverride, extra)
+local function deviceRow(id, title, subtitle, glyph, score)
   return {
-    id = idOverride,
-    title = tostring(d.name or d.id),
-    subtitle = subtitleFor(d, d.active == true, extra),
-    glyph = idOverride == nil and d.active == true and "check"
-      or (d.direction == "input" and "microphone" or tostring(d.icon or "volume")),
+    id = id,
+    title = title,
+    subtitle = subtitle,
+    glyph = glyph,
     score = score,
   }
 end
 
-local function panelRow(score)
-  return {
-    id = "open-panel",
-    title = tr("launcher.open"),
-    subtitle = tr("launcher.description"),
-    glyph = "switch-horizontal",
-    score = score,
-  }
+local function switchIdFor(d)
+  if d.bluetooth == true and d.available == false then
+    return "bt:" .. tostring(d.address)
+  end
+  return "out:" .. tostring(d.id)
 end
 
--- ── Normal mode ─────────────────────────────────────────────────────────────
-
-local function publishNormal(query, snap, trimmed)
+local function publish(query, snap, trimmed)
   local rows = {}
 
-  local function scoreDevice(d)
-    local hay = tostring(d.name or "") .. " " .. tostring(d.description or "")
+  local function scoreFor(hay, activeBonus)
     if trimmed ~= "" then
       local score = noctalia.fuzzyScore(trimmed, hay)
       if score == nil then
         return nil
       end
-      if d.active == true then
+      if activeBonus then
         score += 2
       end
       return score
     end
-    return d.active == true and 3 or 1
+    return activeBonus and 3 or 1
   end
 
+  -- Switch rows: outputs (incl. group sinks and unconnected BT) + inputs.
   for _, d in ipairs(snap.outputs or {}) do
     if type(d) == "table" and d.hidden ~= true then
-      local score = scoreDevice(d)
+      local hay = tostring(d.name or "") .. " " .. tostring(d.description or "")
+      local score = scoreFor(hay, d.active == true)
       if score ~= nil then
-        if d.group == true then
-          local members = type(d.groupMembers) == "table" and table.concat(d.groupMembers, ", ") or ""
-          table.insert(rows, deviceRow(d, score, "ungroup:" .. tostring(d.id), tr("launcher.group_members", { members = members })))
-        elseif d.bluetooth == true and d.available == false then
-          table.insert(rows, deviceRow(d, score, "bt:" .. tostring(d.address), nil))
-        else
-          table.insert(rows, deviceRow(d, score, "out:" .. tostring(d.id), nil))
-        end
+        table.insert(rows, deviceRow(
+          switchIdFor(d),
+          tostring(d.name or d.id),
+          subtitleFor(d, d.active == true, nil),
+          d.active == true and "check" or (tostring(d.icon or "volume")),
+          score
+        ))
       end
     end
   end
 
   for _, d in ipairs(snap.inputs or {}) do
     if type(d) == "table" and d.hidden ~= true then
-      local score = scoreDevice(d)
+      local hay = tostring(d.name or "") .. " " .. tostring(d.description or "")
+      local score = scoreFor(hay, d.active == true)
       if score ~= nil then
-        table.insert(rows, deviceRow(d, score, "in:" .. tostring(d.id), nil))
+        table.insert(rows, deviceRow(
+          "in:" .. tostring(d.id),
+          tostring(d.name or d.id),
+          subtitleFor(d, d.active == true, nil),
+          d.active == true and "check" or "microphone",
+          score
+        ))
+      end
+    end
+  end
+
+  -- Disband rows for existing groups.
+  for _, d in ipairs(snap.outputs or {}) do
+    if type(d) == "table" and d.group == true then
+      local members = type(d.groupMembers) == "table" and table.concat(d.groupMembers, ", ") or ""
+      local hay = tr("launcher.disband") .. " " .. tostring(d.name or "") .. " " .. members
+      local score = scoreFor(hay, nil)
+      if score ~= nil then
+        table.insert(rows, deviceRow(
+          "ungroup:" .. tostring(d.id),
+          tr("launcher.disband"),
+          tr("launcher.group_members", { members = members }),
+          "stack-2",
+          score
+        ))
       end
     end
   end
@@ -148,14 +151,60 @@ local function publishNormal(query, snap, trimmed)
     if type(d) == "table" and d.bluetooth == true and d.available == true
       and type(d.address) == "string" and d.address ~= "" and reconnected[d.address] ~= true then
       reconnected[d.address] = true
-      table.insert(rows, {
-        id = "recon:" .. d.address,
-        title = tr("launcher.reconnect", { name = tostring(d.name or "") }),
-        subtitle = tr("launcher.reconnect_hint"),
-        glyph = "refresh",
-        score = trimmed == "" and 1 or (noctalia.fuzzyScore(trimmed, "reconnect " .. tostring(d.name or "")) or -1),
-      })
+      local hay = "reconnect " .. tostring(d.name or "")
+      local score = scoreFor(hay, nil)
+      if score ~= nil then
+        table.insert(rows, deviceRow(
+          "recon:" .. d.address,
+          tr("launcher.reconnect", { name = tostring(d.name or "") }),
+          tr("launcher.reconnect_hint"),
+          "refresh",
+          score
+        ))
+      end
     end
+  end
+
+  -- Group selector rows: one per groupable output, always visible.
+  local picked = 0
+  for _, v in pairs(selectedIds) do
+    if v then picked += 1 end
+  end
+  for _, d in ipairs(snap.outputs or {}) do
+    if type(d) == "table" and d.hidden ~= true and usableForGroup(d) then
+      local chosen = selectedIds[tostring(d.id)] == true
+      local name = tostring(d.name or "")
+      local hay = tr("launcher.group_add", { name = name }) .. " " .. name
+      local score = scoreFor(hay, nil)
+      if score ~= nil then
+        table.insert(rows, deviceRow(
+          "sel:" .. tostring(d.id),
+          tr("launcher.group_add", { name = name }),
+          chosen and tr("launcher.selected") or tr("launcher.group_add_hint"),
+          chosen and "check" or "stack-2",
+          score
+        ))
+      end
+    end
+  end
+
+  if picked >= 2 then
+    table.insert(rows, deviceRow(
+      "do-group",
+      tr("actions.create_group", { count = picked }),
+      tr("launcher.create_group_hint"),
+      "check",
+      5
+    ))
+  end
+  if picked > 0 then
+    table.insert(rows, deviceRow(
+      "clear-sel",
+      tr("launcher.clear_sel"),
+      tr("launcher.clear_sel_hint"),
+      "x",
+      scoreFor(tr("launcher.clear_sel"), nil) or 1
+    ))
   end
 
   if #rows == 0 then
@@ -166,25 +215,13 @@ local function publishNormal(query, snap, trimmed)
     return
   end
 
-  -- Grouping entry: needs >= 2 usable outputs.
-  local usable = 0
-  for _, d in ipairs(snap.outputs or {}) do
-    if type(d) == "table" and d.hidden ~= true and usableForGroup(d) then
-      usable += 1
-    end
-  end
-  if usable >= 2 then
-    table.insert(rows, {
-      id = "mode:group",
-      title = tr("launcher.new_group"),
-      subtitle = tr("launcher.new_group_hint"),
-      glyph = "stack-2",
-      score = trimmed == "" and 1 or (noctalia.fuzzyScore(trimmed, tr("launcher.new_group") .. " " .. tr("launcher.new_group_hint")) or -1),
-    })
-  end
-
-  local panel = panelRow(if trimmed == "" then 1 else noctalia.fuzzyScore(trimmed, tr("launcher.open") .. " " .. tr("launcher.description")) or -1)
-  table.insert(rows, panel)
+  table.insert(rows, deviceRow(
+    "open-panel",
+    tr("launcher.open"),
+    tr("launcher.description"),
+    "switch-horizontal",
+    scoreFor(tr("launcher.open") .. " " .. tr("launcher.description"), nil)
+  ))
 
   table.sort(rows, function(a, b)
     if a.score ~= b.score then
@@ -203,90 +240,33 @@ local function publishNormal(query, snap, trimmed)
   launcher.setResults(query, rows)
 end
 
--- ── Group mode ──────────────────────────────────────────────────────────────
-
-local function publishGroupMode(query, snap, trimmed)
-  local rows = {}
-  local selectedCount = 0
-
-  for _, d in ipairs(snap.outputs or {}) do
-    if type(d) == "table" and d.hidden ~= true and usableForGroup(d) then
-      local chosen = selectedIds[tostring(d.id)] == true
-      if chosen then
-        selectedCount += 1
-      end
-      local score = 0
-      local hay = tostring(d.name or "") .. " " .. tostring(d.description or "")
-      if trimmed ~= "" then
-        score = noctalia.fuzzyScore(trimmed, hay)
-        if score == nil then
-          continue
-        end
-      else
-        score = selectedIds[tostring(d.id)] == true and 3 or 1
-      end
-      local row = deviceRow(d, score, "sel:" .. tostring(d.id), chosen and tr("launcher.selected") or nil)
-      if chosen then
-        row.glyph = "check"
-      end
-      table.insert(rows, row)
-    end
+-- Repaint when the service publishes a new snapshot (new group, connected BT);
+-- also fires while the window is closed, which is harmless.
+noctalia.state.watch(SNAPSHOT_KEY, function()
+  if type(lastQuery) == "string" then
+    onQuery(lastQuery)
   end
-
-  if selectedCount >= 2 then
-    table.insert(rows, {
-      id = "do-group",
-      title = tr("actions.create_group", { count = selectedCount }),
-      subtitle = tr("launcher.create_group_hint"),
-      glyph = "check",
-      score = 5,
-    })
-  end
-
-  table.insert(rows, {
-    id = "back",
-    title = tr("launcher.back"),
-    subtitle = "",
-    glyph = "chevron-left",
-    score = 0,
-  })
-
-  table.insert(rows, panelRow(if trimmed == "" then 1 else noctalia.fuzzyScore(trimmed, tr("launcher.open") .. " " .. tr("launcher.description")) or -1))
-  table.sort(rows, function(a, b)
-    if a.score ~= b.score then
-      return a.score > b.score
-    end
-    return a.title < b.title
-  end)
-  while #rows > RESULT_LIMIT do
-    table.remove(rows)
-  end
-
-  launcher.setResults(query, rows)
-end
+end)
 
 function onQuery(query)
   lastQuery = type(query) == "string" and query or ""
   local snap = noctalia.state.get(SNAPSHOT_KEY)
   if type(snap) ~= "table" or type(snap.outputs) ~= "table" then
-    launcher.setResults(query, { panelRow(0) })
+    launcher.setResults(query, {
+      { id = "open-panel", title = tr("launcher.open"), subtitle = tr("launcher.description"), glyph = "switch-horizontal", score = 0 },
+    })
     return
   end
 
   if snap.loading == true then
     launcher.setResults(query, {
       { id = "", title = tr("launcher.loading"), glyph = "loader" },
-      panelRow(2),
+      { id = "open-panel", title = tr("launcher.open"), subtitle = tr("launcher.description"), glyph = "switch-horizontal", score = 2 },
     })
     return
   end
 
-  local trimmed = noctalia.string.trim(lastQuery)
-  if groupMode then
-    publishGroupMode(lastQuery, snap, trimmed)
-  else
-    publishNormal(lastQuery, snap, trimmed)
-  end
+  publish(lastQuery, snap, noctalia.string.trim(lastQuery))
 end
 
 function onActivate(id)
@@ -296,21 +276,6 @@ function onActivate(id)
 
   if id == "open-panel" then
     noctalia.togglePanel(PANEL_ID)
-    clearSelection()
-    return
-  end
-
-  if id == "mode:group" then
-    groupMode = true
-    selectedIds = {}
-    keepOpen("") -- keep the launcher open on the selection screen
-    return
-  end
-
-  if id == "back" then
-    local keep = lastQuery
-    clearSelection()
-    keepOpen(keep or "")
     return
   end
 
@@ -323,16 +288,19 @@ function onActivate(id)
     end
     if #ids >= 2 then
       sendCommand("create_output_group", { ids = ids })
-      clearSelection()
-      keepOpen("") -- stay open; snapshot watch repaints the new group
+      selectedIds = {}
     end
+    return
+  end
+
+  if id == "clear-sel" then
+    selectedIds = {}
     return
   end
 
   local selId = string.match(id, "^sel:(.+)$")
   if selId ~= nil then
     selectedIds[selId] = selectedIds[selId] == true and false or true
-    keepOpen(lastQuery or "") -- keep open while multi-selecting
     return
   end
 

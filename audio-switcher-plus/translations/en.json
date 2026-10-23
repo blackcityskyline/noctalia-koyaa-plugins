@@ -90,14 +90,16 @@
     "loading": "Loading devices…",
     "busy": "Working on a device…",
     "no_devices": "No audio devices",
-    "new_group": "New output group",
-    "new_group_hint": "Pick two or more outputs to combine",
     "group_members": "Group of: {members} — click to disband",
     "selected": "selected",
     "create_group_hint": "Combine selected into one sink",
-    "back": "Back to devices",
     "reconnect": "Reconnect {name}",
-    "reconnect_hint": "Disconnect and connect again"
+    "reconnect_hint": "Disconnect and connect again",
+    "group_add": "Group + {name}",
+    "group_add_hint": "Click to pick for a new output group",
+    "clear_sel": "Clear selection",
+    "clear_sel_hint": "Forget the picked group devices",
+    "disband": "Disband group"
   },
   "panel": {
     "group_hint": "{count} selected. Choose at least two available outputs.",
