@@ -53,7 +53,7 @@ open_near_click = true
 [[launcher_provider]]
 id = "launcher"
 entry = "launcher.luau"
-prefix = "audio"
+prefix = "as"
 glyph = "switch-horizontal"
 include_in_global_search = false
 

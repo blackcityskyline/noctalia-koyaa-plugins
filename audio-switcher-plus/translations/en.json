@@ -95,7 +95,9 @@
     "group_members": "Group of: {members} — click to disband",
     "selected": "selected",
     "create_group_hint": "Combine selected into one sink",
-    "back": "Back to devices"
+    "back": "Back to devices",
+    "reconnect": "Reconnect {name}",
+    "reconnect_hint": "Disconnect and connect again"
   },
   "panel": {
     "group_hint": "{count} selected. Choose at least two available outputs.",

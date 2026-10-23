@@ -40,7 +40,6 @@ end
 local function usableForGroup(d)
   return d.available == true
     and d.group ~= true
-    and d.bluetooth ~= true
     and type(d.targetName) == "string"
     and d.targetName ~= ""
 end
@@ -122,6 +121,22 @@ local function publishNormal(query, snap, trimmed)
       if score ~= nil then
         table.insert(rows, deviceRow(d, score, "in:" .. tostring(d.id), nil))
       end
+    end
+  end
+
+  -- Connected Bluetooth devices: explicit reconnect row (disconnect + connect).
+  local reconnected = {}
+  for _, d in ipairs(snap.outputs or {}) do
+    if type(d) == "table" and d.bluetooth == true and d.available == true
+      and type(d.address) == "string" and d.address ~= "" and reconnected[d.address] ~= true then
+      reconnected[d.address] = true
+      table.insert(rows, {
+        id = "recon:" .. d.address,
+        title = tr("launcher.reconnect", { name = tostring(d.name or "") }),
+        subtitle = tr("launcher.reconnect_hint"),
+        glyph = "refresh",
+        score = trimmed == "" and 1 or (noctalia.fuzzyScore(trimmed, "reconnect " .. tostring(d.name or "")) or -1),
+      })
     end
   end
 
@@ -318,5 +333,11 @@ function onActivate(id)
   local address = string.match(id, "^bt:(.+)$")
   if address ~= nil then
     sendCommand("connect_bluetooth", { address = address })
+    return
+  end
+
+  address = string.match(id, "^recon:(.+)$")
+  if address ~= nil then
+    sendCommand("reconnect_bluetooth", { address = address })
   end
 end
