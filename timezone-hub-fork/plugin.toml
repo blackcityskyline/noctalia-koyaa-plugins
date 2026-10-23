@@ -31,7 +31,7 @@ id    = "launcher"
 entry = "launcher.luau"
 prefix = "tz"
 glyph = "world"
-include_in_global_search = true
+include_in_global_search = false
 
 [[setting]]
 key         = "time_format"
