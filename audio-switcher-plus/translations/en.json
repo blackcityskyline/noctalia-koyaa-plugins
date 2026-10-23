@@ -11,7 +11,6 @@
     "group_outputs": "Group outputs",
     "hide": "Hide device",
     "reconnect": "Reconnect",
-    "reconnect": "Reconnect",
     "refresh": "Refresh",
     "save": "Save",
     "select": "Select",
@@ -85,7 +84,18 @@
   },
   "launcher": {
     "description": "Switch the default audio input (microphone) or output.",
-    "open": "Open Audio Switcher"
+    "open": "Open Audio Switcher",
+    "current": "current",
+    "bt_disconnected": "not connected — click to connect",
+    "loading": "Loading devices…",
+    "busy": "Working on a device…",
+    "no_devices": "No audio devices",
+    "new_group": "New output group",
+    "new_group_hint": "Pick two or more outputs to combine",
+    "group_members": "Group of: {members} — click to disband",
+    "selected": "selected",
+    "create_group_hint": "Combine selected into one sink",
+    "back": "Back to devices"
   },
   "panel": {
     "group_hint": "{count} selected. Choose at least two available outputs.",
