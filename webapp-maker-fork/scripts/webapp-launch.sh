@@ -52,8 +52,31 @@ fi
 # ── Resolve browser ──────────────────────────────────────────────────────────
 exec_bin=""
 
+# PATH in .desktop environments often misses ~/.local/bin.
+localBin() {
+  [[ -x "$HOME/.local/bin/$1" ]] && { printf '%s\n' "$HOME/.local/bin/$1"; return 0; }
+  return 1
+}
+tryBin() {
+  command -v "$1" 2>/dev/null || localBin "$1"
+}
+
 if [[ -n $backend ]]; then
-  exec_bin=$(command -v "$backend" 2>/dev/null)
+  # Settings-friendly names normalize to the real binary (helium-browser -> helium).
+  exec_bin=$(tryBin "$backend")
+  if [[ -z $exec_bin ]]; then
+    exec_bin=$(tryBin "${backend%-browser}")
+  fi
+  if [[ -z $exec_bin ]]; then
+    exec_bin=$(tryBin "${backend%-browser-bin}")
+  fi
+  if [[ -z $exec_bin ]]; then
+    exec_bin=$(tryBin "${backend%-bin}")
+  fi
+  # Short name for -browser packages (helium -> helium-browser).
+  if [[ -z $exec_bin ]]; then
+    exec_bin=$(tryBin "${backend}-browser")
+  fi
 fi
 
 # Auto-detect if no backend or binary not found
@@ -64,12 +87,14 @@ if [[ -z $exec_bin ]]; then
   chromium* | chrome* | google-chrome* | brave* | microsoft-edge* | opera* | vivaldi* | helium*)
     exec_bin=$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' \
       "$HOME/.local/share/applications/$browser" "/usr/share/applications/$browser" 2>/dev/null | head -1)
+    exec_bin=${exec_bin//\"/}
     ;;
   userapp-*)
     case ${browser,,} in
     *chromium* | *chrome* | *brave* | *edge* | *opera* | *vivaldi* | *helium*)
       exec_bin=$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' \
         "$HOME/.local/share/applications/$browser" "/usr/share/applications/$browser" 2>/dev/null | head -1)
+      exec_bin=${exec_bin//\"/}
       ;;
     esac
     ;;
@@ -77,7 +102,7 @@ if [[ -z $exec_bin ]]; then
 
   if [[ -z $exec_bin ]]; then
     for candidate in chromium google-chrome-stable google-chrome brave vivaldi microsoft-edge-stable helium; do
-      if command -v "$candidate" >/dev/null; then
+      if tryBin "$candidate" >/dev/null; then
         exec_bin=$candidate
         break
       fi
