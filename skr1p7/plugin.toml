@@ -1,0 +1,62 @@
+id          = "noctalia/skr1p7"
+name        = "Script Box"
+version     = "1.0.0"
+plugin_api  = 13
+author      = "noctalia"
+license     = "MIT"
+icon        = "terminal-2"
+description = "A grid of user-defined script buttons. Each box has a custom glyph and configurable actions for clicks and gestures."
+tags        = ["panel", "utility", "productivity", "launcher"]
+
+[[panel]]
+id              = "panel"
+entry           = "panel.luau"
+width           = 420
+height          = 500
+placement       = "floating"
+position        = "center"
+capture_keys    = ["slash"]
+
+[[widget]]
+id              = "widget"
+entry           = "widget.luau"
+
+[[setting]]
+key             = "columns"
+type            = "int"
+label_key       = "settings.columns.label"
+description_key = "settings.columns.description"
+default         = 4
+min             = 1
+max             = 8
+
+[[setting]]
+key             = "data_path"
+type            = "file"
+label_key       = "settings.data_path.label"
+description_key = "settings.data_path.description"
+default         = ""
+extensions      = [".json"]
+
+[[setting]]
+key             = "privilege_escalation"
+type            = "select"
+label_key       = "settings.privilege_escalation.label"
+description_key = "settings.privilege_escalation.description"
+default         = "none"
+options = [
+    { value = "none", label_key = "settings.privilege_escalation.none" },
+    { value = "pkexec", label_key = "settings.privilege_escalation.pkexec" },
+    { value = "run0", label_key = "settings.privilege_escalation.run0" },
+]
+
+[[setting]]
+key             = "view_mode"
+type            = "select"
+label_key       = "settings.view_mode.label"
+description_key = "settings.view_mode.description"
+default         = "grid"
+options = [
+    { value = "grid", label_key = "settings.view_mode.grid" },
+    { value = "list", label_key = "settings.view_mode.list" },
+]

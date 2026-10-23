@@ -1,0 +1,35 @@
+{
+  "title": "DNS & DNSCrypt Switcher",
+  "applied": "DNS applied: {name}",
+  "err_apply_failed": "Failed to update DNS or DNSCrypt configuration",
+  "err_no_connection": "No active NetworkManager connection",
+  "status_checking": "Checking...",
+  "status_default": "Default (ISP)",
+  "status_custom": "Custom ({ip})",
+  "settings": {
+    "engine_mode": {
+      "label": "Engine Mode",
+      "description": "Choose 'dnscrypt' to route queries through local dnscrypt-proxy daemon or 'nmcli' for standard direct DNS."
+    },
+    "privilege_tool": {
+      "label": "Privilege Elevation Tool",
+      "description": "Tool used for root actions (systemctl restart & nmcli modify). Choose 'run0' (systemd) or 'pkexec' (polkit)."
+    },
+    "dnscrypt_config": {
+      "label": "DNSCrypt Config Path",
+      "description": "Path to dnscrypt-proxy.toml. Symlinks will be detected and resolved automatically."
+    },
+    "dnscrypt_service": {
+      "label": "DNSCrypt Systemd Service",
+      "description": "Systemd unit name for restarting the daemon."
+    },
+    "providers": {
+      "label": "Providers",
+      "description": "Comma-separated list of built-in providers."
+    },
+    "show_label": {
+      "label": "Show Label",
+      "description": "Display active DNS name on the bar widget."
+    }
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "title": "Script Box",
+  "panel": {
+    "title": "Script Box",
+    "edit_title": "Edit Scripts",
+    "edit_mode": "Edit scripts",
+    "empty": "No scripts yet",
+    "add_first": "Add your first script",
+    "add": "Add script",
+    "no_scripts": "No scripts. Tap Add to create one.",
+    "new_script": "New Script",
+    "edit_script": "Edit Script",
+    "close": "Close",
+    "back": "Back",
+    "search_placeholder": "Search scripts...",
+    "tip_sort": "Sort mode",
+    "tip_edit": "Edit scripts",
+    "tip_toml": "Configuration",
+    "tip_close": "Close",
+    "tip_back": "Back",
+    "tip_new": "Add script",
+    "tip_save": "Save",
+    "tip_delete": "Delete",
+    "tip_prev": "Previous page",
+    "tip_next": "Next page",
+    "tip_import": "Import from clipboard",
+    "tip_export": "Export to clipboard"
+  },
+  "form": {
+    "glyph": "Icon name (Tabler Icons)",
+    "name": "Name",
+    "label": "Label",
+    "desc": "Description",
+    "command": "Shell command",
+    "actions_header": "Gesture actions",
+    "pick_glyph": "Pick icon",
+    "add_gesture": "Add gesture",
+    "gesture_command": "Command for this gesture",
+    "all_gestures_added": "All gestures added",
+    "glyph_search": "Search icons...",
+    "no_glyphs": "No matching icons",
+    "sudo": "Run as root",
+    "description": "Description (shown under label)",
+    "tooltip": "Tooltip"
+  },
+  "status": {
+    "running": "Running {label}...",
+    "ok": "{label} — done",
+    "error": "{label} — failed"
+  },
+  "gesture": {
+    "lmb": "Left click",
+    "rmb": "Right click",
+    "mmb": "Middle click",
+    "scroll_up": "Scroll up",
+    "scroll_down": "Scroll down",
+    "scroll_left": "Scroll left",
+    "scroll_right": "Scroll right",
+    "enter": "Enter",
+    "back": "Back button",
+    "forward": "Forward button"
+  },
+  "actions": {
+    "run": "Run",
+    "none": "None",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "edit": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "drag_tooltip": "Drag to reorder"
+  },
+  "sort": {
+    "usage": "Sort: by usage",
+    "new_to_old": "Sort: new to old",
+    "old_to_new": "Sort: old to new",
+    "alpha": "Sort: alphabetical"
+  },
+  "err": {
+    "no_command": "No command specified for this script.",
+    "exit_code": "Script \"{label}\" exited with code {code}.",
+    "required_fields": "Label is required.",
+    "need_lmb": "Left click command is required.",
+    "read_failed": "Failed to read data file: {error}",
+    "corrupt": "Data file is corrupt: {error}",
+    "save_failed": "Failed to save: {error}",
+    "delete_failed": "Failed to delete: {error}",
+    "no_data_dir": "Plugin data directory is not available."
+  },
+  "settings": {
+    "columns": {
+      "label": "Grid columns",
+      "description": "Number of columns in the tile grid."
+    },
+    "data_path": {
+      "label": "Data file path",
+      "description": "Optional path to a custom JSON data file. Leave empty to use the default plugin data directory."
+    },
+    "privilege_escalation": {
+      "label": "Privilege escalation",
+      "description": "Tool used when a script requires root. Choose pkexec or run0.",
+      "none": "None",
+      "pkexec": "pkexec",
+      "run0": "run0"
+    },
+    "view_mode": {
+      "label": "View mode",
+      "description": "How scripts are displayed in the panel.",
+      "grid": "Grid",
+      "list": "List"
+    }
+  }
+}

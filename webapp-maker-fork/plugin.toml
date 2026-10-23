@@ -1,0 +1,33 @@
+id = "koyaa-plugins/webapp-maker-fork"
+name = "Webapp Maker (Fork)"
+version = "1.1.0"
+plugin_api = 9
+author = "koyaa-plugins (forked from umedbazarov)"
+license = "MIT"
+icon = "world-plus"
+description = "Turn websites into desktop apps. Chromium-family uses --app mode (no UI), Firefox-family uses --new-window. Configure browser_backend in settings."
+dependencies = ["bash", "chmod", "cp", "curl", "file", "grep", "head", "mkdir", "rm", "sed", "setsid", "tr", "xdg-settings"]
+tags = ["panel", "utility"]
+
+[[setting]]
+key = "browser_backend"
+type = "string"
+label_key = "settings.browser_backend.label"
+description_key = "settings.browser_backend.description"
+default = ""
+
+[[setting]]
+key = "env_file"
+type = "string"
+label_key = "settings.env_file.label"
+description_key = "settings.env_file.description"
+default = ""
+advanced = true
+
+[[panel]]
+id = "panel"
+entry = "panel.luau"
+width = 440
+height = 560
+placement = "floating"
+position = "center"

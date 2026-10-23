@@ -1,0 +1,62 @@
+id = "koyaa-plugins/audio-switcher-plus"
+name = "Audio Switcher"
+version = "1.0.0"
+plugin_api = 15
+author = "blackbartblues"
+license = "MIT"
+icon = "switch-horizontal"
+description = "Switch audio inputs and outputs, hand off Bluetooth devices, and control them from compositor keybinds."
+tags = ["audio", "bar", "hardware", "launcher", "panel", "service", "system", "utility"]
+dependencies = ["pactl", "bluetoothctl", "sleep"]
+
+[[setting]]
+key = "show_percentage"
+type = "bool"
+label_key = "settings.show_percentage.label"
+description_key = "settings.show_percentage.description"
+default = true
+
+[[setting]]
+key = "show_notification_on_switch"
+type = "bool"
+label_key = "settings.show_notification_on_switch.label"
+description_key = "settings.show_notification_on_switch.description"
+default = true
+
+[[setting]]
+key = "show_actions_in_tooltip"
+type = "bool"
+label_key = "settings.show_actions_in_tooltip.label"
+description_key = "settings.show_actions_in_tooltip.description"
+default = true
+
+[[widget]]
+id = "widget"
+entry = "widget.luau"
+
+  [widget.actions]
+  scroll_up = "volume-up"
+  scroll_down = "volume-down"
+  left = "panel-toggle koyaa-plugins/audio-switcher-plus:audio-switcher-plus"
+  right = "plugin koyaa-plugins/audio-switcher-plus:service all cycle-output"
+  middle = "plugin koyaa-plugins/audio-switcher-plus:service all cycle-input"
+
+[[panel]]
+id = "audio-switcher-plus"
+entry = "panel.luau"
+width = 620
+height = 650
+placement = "attached"
+position = "top_right"
+open_near_click = true
+
+[[launcher_provider]]
+id = "launcher"
+entry = "launcher.luau"
+prefix = "audio"
+glyph = "switch-horizontal"
+include_in_global_search = true
+
+[[service]]
+id = "service"
+entry = "service.luau"
