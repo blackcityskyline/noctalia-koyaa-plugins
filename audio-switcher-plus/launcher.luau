@@ -16,6 +16,7 @@ local RESULT_LIMIT = 40
 local requestCounter = 0
 local groupMode = false
 local selectedIds = {}
+local lastQuery = ""
 
 local function tr(key, args)
   return noctalia.tr(key, args)
@@ -36,6 +37,23 @@ local function clearSelection()
   selectedIds = {}
   groupMode = false
 end
+
+-- keeps the launcher window open through a multi-stage flow; setQuery may be
+-- missing in old plugin API builds — degrade to close-on-activate.
+local function keepOpen(queryText)
+  if type(launcher.setQuery) == "function" then
+    launcher.setQuery(queryText or "")
+  end
+end
+
+-- Republish whenever the service publishes a new snapshot, so rows created
+-- asynchronously (a freshly created group, a connected BT device) show up
+-- without new keystrokes. Runs in the same runtime as the service entries.
+noctalia.state.watch(SNAPSHOT_KEY, function()
+  if type(lastQuery) == "string" then
+    onQuery(lastQuery)
+  end
+end)
 
 local function usableForGroup(d)
   return d.available == true
@@ -248,6 +266,7 @@ local function publishGroupMode(query, snap, trimmed)
 end
 
 function onQuery(query)
+  lastQuery = type(query) == "string" and query or ""
   local snap = noctalia.state.get(SNAPSHOT_KEY)
   if type(snap) ~= "table" or type(snap.outputs) ~= "table" then
     launcher.setResults(query, { panelRow(0) })
@@ -262,11 +281,11 @@ function onQuery(query)
     return
   end
 
-  local trimmed = noctalia.string.trim(query or "")
+  local trimmed = noctalia.string.trim(lastQuery)
   if groupMode then
-    publishGroupMode(query, snap, trimmed)
+    publishGroupMode(lastQuery, snap, trimmed)
   else
-    publishNormal(query, snap, trimmed)
+    publishNormal(lastQuery, snap, trimmed)
   end
 end
 
@@ -284,11 +303,14 @@ function onActivate(id)
   if id == "mode:group" then
     groupMode = true
     selectedIds = {}
+    keepOpen("") -- keep the launcher open on the selection screen
     return
   end
 
   if id == "back" then
+    local keep = lastQuery
     clearSelection()
+    keepOpen(keep or "")
     return
   end
 
@@ -302,6 +324,7 @@ function onActivate(id)
     if #ids >= 2 then
       sendCommand("create_output_group", { ids = ids })
       clearSelection()
+      keepOpen("") -- stay open; snapshot watch repaints the new group
     end
     return
   end
@@ -309,6 +332,7 @@ function onActivate(id)
   local selId = string.match(id, "^sel:(.+)$")
   if selId ~= nil then
     selectedIds[selId] = selectedIds[selId] == true and false or true
+    keepOpen(lastQuery or "") -- keep open while multi-selecting
     return
   end
 
